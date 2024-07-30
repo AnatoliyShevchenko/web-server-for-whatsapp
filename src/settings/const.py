@@ -13,3 +13,6 @@ DB_URL = f"postgresql+psycopg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME
 # WhatsApp
 WEBHOOK_VERIFY_TOKEN = config("WEBHOOK_VERIFY_TOKEN")
 GRAPH_API_TOKEN = config("GRAPH_API_TOKEN")
+
+# FastAPI
+PORT = config("PORT", cast=int)

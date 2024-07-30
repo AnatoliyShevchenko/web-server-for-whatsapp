@@ -4,7 +4,7 @@ from fastapi.responses import PlainTextResponse
 
 # Thirt-Party
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete, and_, insert
+from sqlalchemy import update
 
 # Local
 from src.utils.session import get_async_session
@@ -28,13 +28,13 @@ class WebhooksView:
         self.router.add_api_route(
             path=self.path, endpoint=self.handle_webhook,
             methods=["POST"], responses={
-                200: {"model": PlainTextResponse}
+                200: {"model": None}
             }
         )
         self.router.add_api_route(
             path=self.path, endpoint=self.verify_webhook,
             methods=["GET"], responses={
-                200: {"model": PlainTextResponse},
+                200: {"model": None},
                 403: {"model": None}
             }
         )

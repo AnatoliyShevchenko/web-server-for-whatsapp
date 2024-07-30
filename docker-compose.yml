@@ -1,0 +1,41 @@
+services:
+
+  db:
+    image: postgres
+    container_name: whatsapp-web-postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    restart: always
+    networks:
+      - whatsapp-network
+
+  web-server:
+    build: .
+    container_name: whatsapp-web-server
+    command: bash -c "alembic upgrade head && python main.py"
+    env_file:
+      - .env
+    ports:
+      - ${PORT}:${PORT}
+    restart: always
+    depends_on:
+      - db
+    networks:
+      - whatsapp-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ioka-ngrok
+    command: http --domain=${DOMAIN} ${PORT}
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    network_mode: "host"
+
+networks:
+  whatsapp-network:
