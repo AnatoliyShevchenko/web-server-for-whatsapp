@@ -85,9 +85,11 @@ class WebhooksView:
 
         return PlainTextResponse(status_code=200)
     
-    async def verify_webhook(
-        self, hub_mode: str, hub_verify_token: str, hub_challenge: str
-    ):
+    async def verify_webhook(self, request: Request):
+        params = request.query_params
+        hub_mode = params.get("hub.mode")
+        hub_verify_token = params.get("hub.verify_token")
+        hub_challenge = params.get("hub.challenge")
         if hub_mode == "subscribe" and \
             hub_verify_token == WEBHOOK_VERIFY_TOKEN:
             logger.info(msg="Webhook verified successfully!")
