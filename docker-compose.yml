@@ -9,11 +9,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "5432:5432"
     restart: always
-    networks:
-      - whatsapp-network
+    network_mode: "host"
 
   web-server:
     build: .
@@ -21,21 +18,20 @@ services:
     command: bash -c "alembic upgrade head && python main.py"
     env_file:
       - .env
-    ports:
-      - ${PORT}:${PORT}
+    environment:
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+      - GRAPH_API_TOKEN=${GRAPH_API_TOKEN}
     restart: always
     depends_on:
       - db
-    networks:
-      - whatsapp-network
+    network_mode: "host"
 
   ngrok:
     image: ngrok/ngrok:latest
-    container_name: ioka-ngrok
+    container_name: whatsapp-web-ngrok
     command: http --domain=${DOMAIN} ${PORT}
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+      - GRAPH_API_TOKEN=${GRAPH_API_TOKEN}
     network_mode: "host"
-
-networks:
-  whatsapp-network:

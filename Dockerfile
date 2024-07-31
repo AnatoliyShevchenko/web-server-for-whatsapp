@@ -8,6 +8,10 @@ RUN python -m venv /venv
 
 ENV PATH="/venv/bin:$PATH"
 
+ENV WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+
+ENV GRAPH_API_TOKEN=${GRAPH_API_TOKEN}
+
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
