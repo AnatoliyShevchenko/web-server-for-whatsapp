@@ -25,15 +25,21 @@ class AioClient:
             self._session = None
 
     async def make_post_request(
-        self, url: str, headers: dict, json: dict
+        self, url: str, headers: dict, 
+        data: dict = None, json: dict = None
     ) -> ClientResponse:
         session = await self.create_session()
         try:
-            response = await session.post(
-                url=url, headers=headers, json=json
-            )
+            if json:
+                response = await session.post(
+                    url=url, headers=headers, json=json
+                )
+            elif data:
+                response = await session.post(
+                    url=url, headers=headers, data=data
+                )
             logger.info(msg=f"Response status for URL: {url}"
-                    f"is: {response.status}")
+                    f" is: {response.status}")
             return response
         except ClientError as ce:
             logger.error(msg="Client Error happend:", exc_info=ce)

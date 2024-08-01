@@ -4,7 +4,7 @@ services:
     image: postgres
     container_name: whatsapp-web-postgres
     volumes:
-      - ./data/db:/var/lib/postgresql/data
+      - whatsapp_volume:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -39,3 +39,6 @@ services:
 
 networks:
   whatsapp-network:
+
+volumes:
+  whatsapp_volume:

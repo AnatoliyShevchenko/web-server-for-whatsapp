@@ -6,16 +6,19 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update
 
+# Python
+import json
+
 # Local
 from src.utils.session import get_async_session
 from src.utils.data_processing import (
     get_message_from_body, get_user_number,
     get_business_phone_number_id, get_button_data,
 )
-from src.utils.aio_client import AioClient
+from src.wa_module.aio_client import AioClient
 from src.models.clients import Clients
 from src.settings.base import logger
-from src.settings.const import GRAPH_API_TOKEN, WEBHOOK_VERIFY_TOKEN
+from src.settings.const import TEMP_TOKEN, WEBHOOK_VERIFY_TOKEN, GRAPH_API_TOKEN, NUMBER_ID
 
 
 class WebhooksView:
@@ -26,16 +29,16 @@ class WebhooksView:
         self.client = AioClient()
         self.router = APIRouter(tags=["View/Recieve Webhooks"])
         self.router.add_api_route(
-            path=self.path, endpoint=self.handle_webhook,
-            methods=["POST"], responses={
-                200: {"model": None}
-            }
-        )
-        self.router.add_api_route(
             path=self.path, endpoint=self.verify_webhook,
             methods=["GET"], responses={
                 200: {"model": None},
                 403: {"model": None}
+            }
+        )
+        self.router.add_api_route(
+            path=self.path, endpoint=self.handle_webhook,
+            methods=["POST"], responses={
+                200: {"model": None}
             }
         )
 
@@ -43,38 +46,14 @@ class WebhooksView:
         self, request: Request,
         session: AsyncSession = Depends(get_async_session)
     ):
-        body = await request.json()
-        logger.info(msg="Incoming webhook message: ", exc_info=body)
+        temp = await request.body()
+        body = json.loads(temp)
+        logger.info(msg=f"Incoming webhook message: {temp}")
         
         message = get_message_from_body(body=body)
-
-        if message.get("type") == "text":
-            business_phone_number_id = \
-                get_business_phone_number_id(body=body)
+        if message.get("type") == "button":
             wa_id = get_user_number(body=body)
             button = get_button_data(body=body)
-
-            await self.client.make_post_request(
-                url=f"https://graph.facebook.com/v18.0/{business_phone_number_id}/messages",
-                headers={"Authorization": f"Bearer {GRAPH_API_TOKEN}"},
-                json={
-                    "messaging_product": "whatsapp",
-                    "to": message["from"],
-                    "text": {"body": "Echo: " + message["text"]["body"]},
-                    "context": {"message_id": message["id"]}
-                }
-            )
-
-            await self.client.make_post_request(
-                url=f"https://graph.facebook.com/v18.0/{business_phone_number_id}/messages",
-                headers={"Authorization": f"Bearer {GRAPH_API_TOKEN}"},
-                json={
-                    "messaging_product": "whatsapp",
-                    "status": "read",
-                    "message_id": message["id"]
-                }
-            )
-            
             if button:
                 stmt = update(Clients).where(
                     Clients.wa_id == wa_id
@@ -82,6 +61,31 @@ class WebhooksView:
                 await session.execute(statement=stmt)
                 await session.commit()
                 logger.info(msg=f"{wa_id} updated!")
+        try:
+            await self.client.make_post_request(
+                url=f"https://graph.facebook.com/v20.0/{NUMBER_ID}/messages",
+                headers={"Authorization": f"Bearer {TEMP_TOKEN}"},
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": message["from"],
+                    "text": {"body": "Echo: " + message["text"]["body"]},
+                    "context": {"message_id": message["id"]}
+                }
+            )
+        except Exception as e:
+            logger.error(msg="Unknown error:", exc_info=e)
+        try:
+            await self.client.make_post_request(
+                url=f"https://graph.facebook.com/v20.0/{NUMBER_ID}/messages",
+                headers={"Authorization": f"Bearer {TEMP_TOKEN}"},
+                json={
+                    "messaging_product": "whatsapp",
+                    "status": "read",
+                    "message_id": message["id"]
+                }
+            )
+        except Exception as e:
+            logger.error(msg="Unknown error:", exc_info=e)
 
         return PlainTextResponse(status_code=200)
     
